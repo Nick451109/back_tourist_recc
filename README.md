@@ -1,8 +1,14 @@
 # back_tourist_recc
-AI project backend
+AI project backend for tourists recommendations
 
-Activate virtual env
+## Create virtual env
+python3 -m venv ambiente_virt
+
+## Activate virtual env
 source ambiente_virt/bin/activate
 
-Create super user
+## Install requirements
+pip install -r requirements.txt
+
+## Create super user
 python3 manage.py createsuperuser
