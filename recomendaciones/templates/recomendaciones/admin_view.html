@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Recomendaciones</title>
+    <!-- Enlace a Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="flex flex-col min-h-screen bg-gray-50 px-8 py-6">
+
+    <!-- Encabezado -->
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-blue-600">Gestión de Recomendaciones</h1>
+        <a href="{{ external_url }}" class="text-lg text-blue-500 underline hover:text-blue-700 transition"
+            target="_blank" rel="noopener noreferrer">
+            Cambiar tipo de usuario
+        </a>
+    </div>
+
+    <!-- Panel de la Tabla -->
+    <div class="flex-1 bg-white rounded-lg shadow-lg p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-semibold text-gray-700">Recomendaciones</h2>
+            <a href="{% url 'crear_recomendacion' %}"
+                class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition">
+                + Crear Recomendación
+            </a>
+        </div>
+
+        <table class="w-full border-collapse rounded-lg overflow-hidden shadow-sm">
+            <thead>
+                <tr class="bg-blue-100">
+                    <th class="text-left p-4 text-blue-700">Nombre</th>
+                    <th class="text-left p-4 text-blue-700">Ciudad</th>
+                    <th class="text-left p-4 text-blue-700">Duración</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for rec in recommendations %}
+                <tr class="cursor-pointer hover:bg-blue-50">
+                    <td class="p-4 text-gray-700">{{ rec.name }}</td>
+                    <td class="p-4 text-gray-700">{{ rec.city }}</td>
+                    <td class="p-4 text-gray-700">{{ rec.duration }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</body>
+
+</html>

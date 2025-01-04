@@ -133,5 +133,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 LOGIN_URL = '/login/'  # URL para acceder al formulario de login
-LOGIN_REDIRECT_URL = 'https://ia-proyecto-dun.vercel.app/admin-view'  # URL después de iniciar sesión exitosamente
+LOGIN_REDIRECT_URL = '/recommendations/'  # URL después de iniciar sesión exitosamente
 LOGOUT_REDIRECT_URL = '/login/'  # URL después de cerrar sesión
