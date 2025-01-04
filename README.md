@@ -1,5 +1,5 @@
 # back_tourist_recc
-AI project backend for tourists recommendations
+AI backend project for tourists recommendations
 
 ## Create virtual env
 python3 -m venv ambiente_virt
