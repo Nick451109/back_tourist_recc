@@ -40,14 +40,28 @@
                     <th class="text-left p-4 text-blue-700">Nombre</th>
                     <th class="text-left p-4 text-blue-700">Ciudad</th>
                     <th class="text-left p-4 text-blue-700">Duración</th>
+                    <th class="text-left p-4 text-blue-700">Categoría</th>
+                    <th class="text-left p-4 text-blue-700">Descripción</th>
+                    <th class="text-left p-4 text-blue-700">Acción</th>
+
                 </tr>
             </thead>
             <tbody>
                 {% for rec in recommendations %}
                 <tr class="cursor-pointer hover:bg-blue-50">
-                    <td class="p-4 text-gray-700">{{ rec.name }}</td>
-                    <td class="p-4 text-gray-700">{{ rec.city }}</td>
-                    <td class="p-4 text-gray-700">{{ rec.duration }}</td>
+                    <td class="p-4 text-gray-700">{{ rec.nombre_actividad }}</td>
+                    <td class="p-4 text-gray-700">{{ rec.ciudad }}</td>
+                    <td class="p-4 text-gray-700">{{ rec.duracion }}</td>
+                    <td class="p-4 text-gray-700">{{ rec.categoria }}</td>
+                    <td class="p-4 text-gray-700">{{ rec.descripcion }}</td>
+                    <td class="p-4 text-gray-700">
+                        <form action="{% url 'eliminar_recomendacion' rec.id %}" method="post" onsubmit="return confirm('¿Estás seguro de que deseas eliminar esta recomendación?');">
+                            {% csrf_token %}
+                            <button type="submit" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition">
+                                Eliminar
+                            </button>
+                        </form>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
