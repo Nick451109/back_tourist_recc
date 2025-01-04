@@ -1,21 +1,22 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crear Recomendación</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100 flex justify-center items-center h-screen">
-    <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-        <h1 class="text-2xl font-bold mb-6 text-blue-600">Crear Recomendación</h1>
-        <form method="post">
+<div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Crear recomendación</h2>
+            <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <form action="" method="post">
             {% csrf_token %}
-            {{ form.as_p }}
-            <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition">
-                Guardar Recomendación
-            </button>
+            <div class="modal-body">
+                <!--cuerpo del form (campos de mi modelo)-->
+                {{ form.as_p }}
+            </div>
+    
+            <div class="modal-footer">
+                <button class="btn btn-danger" type="button" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-primary" type="submit">Confirmar</button>
+            </div>
         </form>
+        
     </div>
-</body>
-</html>
+</div>
