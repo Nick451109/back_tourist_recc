@@ -7,6 +7,10 @@ python3 -m venv ambiente_virt
 ## Activate virtual env
 source ambiente_virt/bin/activate
 
+## Migrations
+python manage.py makemigrations
+python manage.py migrate
+
 ## Install requirements
 pip install -r requirements.txt
 
