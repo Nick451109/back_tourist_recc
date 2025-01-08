@@ -20,11 +20,11 @@ from usuarios.views import CustomLoginView
 from django.contrib.auth.views import LogoutView
 
 urlpatterns = [
-    #aqui redirijo al login xd
+    # Redirige la raíz al login
     path('', lambda request: redirect('login')),
-    path('admin/', admin.site.urls),
-    path('', include('recomendaciones.urls')),
-
     path('login/', CustomLoginView.as_view(), name='login'),
     path('logout/', LogoutView.as_view(), name='logout'),
+    path('', include('recomendaciones.urls')),
+
+    path('admin/', admin.site.urls),
 ]
