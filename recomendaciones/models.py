@@ -27,3 +27,8 @@ class Recomendacion(models.Model):
 
     def __str__(self):
         return f"{self.nombre_actividad} en {self.ciudad}"
+
+class UploadedImage(models.Model):
+    original_image = models.ImageField(upload_to='images/original/')
+    processed_image = models.ImageField(upload_to='images/procesada/', null=True, blank=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)

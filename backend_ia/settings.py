@@ -141,3 +141,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = '/login/'  # URL para acceder al formulario de login
 LOGIN_REDIRECT_URL = '/recommendations/'  # URL después de iniciar sesión exitosamente
 LOGOUT_REDIRECT_URL = '/login/'  # URL después de cerrar sesión
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
