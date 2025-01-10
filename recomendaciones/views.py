@@ -10,6 +10,7 @@ from PIL import Image
 from .models import UploadedImage
 from django.conf import settings
 import os
+import json
 
 # Create your views here.
 
@@ -33,46 +34,49 @@ def eliminar_recomendacion(request, pk):
     return redirect(reverse('admin_view'))
 
 
+MEDIA_DIR = "media/images"
+
 @csrf_exempt
 def upload_image(request):
     if request.method == "POST":
-        image_data = request.POST.get("image")
-        if image_data:
+        try:
+            body = json.loads(request.body)
+            image_data = body.get("image")
+
+            if not image_data:
+                return JsonResponse({"error": "No se proporcionó una imagen válida"}, status=400)
+
+            # Eliminar el prefijo "data:image/png;base64,"
+            if image_data.startswith("data:image/"):
+                image_data = image_data.split(",")[1]
+
             # Decodificar la imagen base64
-            format, imgstr = image_data.split(';base64,')  # Dividir datos base64
-            ext = format.split('/')[-1]  # Extraer extensión
-            img = base64.b64decode(imgstr)
+            image_bytes = base64.b64decode(image_data)
+            image = Image.open(BytesIO(image_bytes))
 
-            # Guardar la imagen original en 'images/original'
-            original_path = os.path.join(settings.MEDIA_ROOT, 'images/original')
-            os.makedirs(original_path, exist_ok=True)
-            original_file_name = f"{original_path}/original_image.{ext}"
+            # Guardar la imagen original
+            original_path = os.path.join(MEDIA_DIR, "original", "original_image.png")
+            os.makedirs(os.path.dirname(original_path), exist_ok=True)
+            image.save(original_path)
 
-            with open(original_file_name, "wb") as f:
-                f.write(img)
+            # Procesar la imagen (ejemplo: convertir a escala de grises)
+            # TODO: procesar con el modelo de IA
 
-            # Procesar la imagen (ejemplo: redimensionar)
-            original_image = Image.open(BytesIO(img))
-            processed_image = original_image.resize((400, 400))  # Redimensionar a 400x400
+            #processed_image = image.convert("L")
+            #processed_path = os.path.join(MEDIA_DIR, "procesada", "processed_image.png")
+            #os.makedirs(os.path.dirname(processed_path), exist_ok=True)
+            #processed_image.save(processed_path)
 
-            # Guardar la imagen procesada en 'images/procesada'
-            processed_path = os.path.join(settings.MEDIA_ROOT, 'images/procesada')
-            os.makedirs(processed_path, exist_ok=True)
-            processed_file_name = f"{processed_path}/processed_image.{ext}"
-            processed_image.save(processed_file_name)
-
-            # Guardar en el modelo UploadedImage
-            uploaded_image = UploadedImage.objects.create(
-                original_image=f"images/original/original_image.{ext}",
-                processed_image=f"images/procesada/processed_image.{ext}",
-            )
-
+            # Responder con las rutas de las imágenes
             return JsonResponse({
-                "message": "Imagen recibida y procesada correctamente",
-                "original_image_url": uploaded_image.original_image.url,
-                "processed_image_url": uploaded_image.processed_image.url,
+                "message": "Imagen procesada exitosamente",
+                "original_image_url": f"/media/images/original/original_image.png",
+                #"processed_image_url": f"/media/images/procesada/processed_image.png"
             }, status=200)
-        return JsonResponse({"error": "No se proporcionó una imagen válida"}, status=400)
+
+        except Exception as e:
+            return JsonResponse({"error": f"Error al procesar la imagen: {str(e)}"}, status=500)
+
     return JsonResponse({"error": "Método no permitido"}, status=405)
 
 class CrearRecomendacionView(CreateView):
