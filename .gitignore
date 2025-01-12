@@ -37,3 +37,6 @@ staticfiles/
 # Other
 *.bak
 *.tmp
+
+models/*.keras
+models/*.h5

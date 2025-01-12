@@ -1,4 +1,4 @@
-from django.shortcuts import render,get_object_or_404, redirect
+from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic.edit import CreateView
 from django.urls import reverse_lazy, reverse
 from .models import Recomendacion
@@ -6,11 +6,14 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import base64
 from io import BytesIO
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 from .models import UploadedImage
 from django.conf import settings
 import os
 import json
+import numpy as np
+import tensorflow as tf
+import cv2
 
 # Create your views here.
 
@@ -35,6 +38,10 @@ def eliminar_recomendacion(request, pk):
 
 
 MEDIA_DIR = "media/images"
+MODEL_PATH = os.path.join(settings.BASE_DIR, 'models/modelo_ultimaVersion.h5')
+TEST_IMAGE_PATH = os.path.join(settings.BASE_DIR, 'models/imagen.png')
+
+
 
 @csrf_exempt
 def upload_image(request):
@@ -54,30 +61,154 @@ def upload_image(request):
             image_bytes = base64.b64decode(image_data)
             image = Image.open(BytesIO(image_bytes))
 
+            # Convertir la imagen a RGB si tiene 4 canales
+            if image.mode == "RGBA":
+                image = image.convert("RGB")
+
+            # Obtener dimensiones originales
+            orig_w, orig_h = image.size
+
+            # Convertir la imagen a un formato que el modelo pueda procesar
+            image_np = np.array(image)
+            image_resized = cv2.resize(image_np, (224, 224))  # Tamaño esperado por el modelo
+            image_array = np.expand_dims(image_resized, axis=0) / 255.0
+
+            # Cargar el modelo de detección de bounding boxes
+            model = tf.keras.models.load_model(MODEL_PATH, compile=False)
+
+            # Realizar la predicción
+            predictions = model.predict(image_array)[0].reshape(-1, 4)
+
+            # Procesar predicciones y escalar a dimensiones originales
+            bounding_boxes = process_predictions(predictions, orig_w, orig_h)
+
+            # Cargar el modelo de predicción de género
+            gender_model_path = os.path.join(settings.BASE_DIR, 'models/GenderFinal.keras')
+            gender_model = tf.keras.models.load_model(gender_model_path, compile=False)
+
+            # Cargar el modelo de predicción de edad
+            age_model_path = os.path.join(settings.BASE_DIR, 'models/AgeFinal.keras')
+            age_model = tf.keras.models.load_model(age_model_path, compile=False)
+            age_labels = ["Infante", "Ninez", "Adolescencia", "Adulto Joven", "Adulto", "Adulto Mayor"]
+
+            # Realizar predicciones de género y edad para cada bounding box
+            dataPeople = []
+            for bbox in bounding_boxes:
+                # Recortar la cara según el bounding box
+                face = image_np[bbox["y_min"]:bbox["y_max"], bbox["x_min"]:bbox["x_max"]]
+                face_resized = cv2.resize(face, (224, 224)) / 255.0
+                face_array = np.expand_dims(face_resized, axis=0)
+
+                # Predicción del modelo de género
+                gender_prediction = gender_model.predict(face_array)[0][0]
+                gender_label = "Femenino" if gender_prediction > 0.5 else "Masculino"
+
+                # Predicción del modelo de edad
+                age_prediction = age_model.predict(face_array)[0]
+                age_label = age_labels[np.argmax(age_prediction[:6])]
+
+                dataPeople.append({
+                    "gender": gender_label,
+                    "confidence": float(gender_prediction),
+                    "age": age_label,
+                    "bbox": bbox
+                })
+
             # Guardar la imagen original
             original_path = os.path.join(MEDIA_DIR, "original", "original_image.png")
             os.makedirs(os.path.dirname(original_path), exist_ok=True)
             image.save(original_path)
 
-            # Procesar la imagen (ejemplo: convertir a escala de grises)
-            # TODO: procesar con el modelo de IA
+            # Dibujar bounding boxes y etiquetas en la imagen
+            processed_image = image.copy()
+            draw = ImageDraw.Draw(processed_image)
+            font_size = 30  # Tamaño de la fuente más grande
+            font_path = os.path.join(settings.BASE_DIR, "fonts/arial.ttf")
+            try:
+                font = ImageFont.truetype(font_path, font_size)  # Cargar la fuente desde el archivo local
+            except IOError:
+                font = ImageFont.load_default()  # Usar fuente predeterminada si ocurre un error
 
-            #processed_image = image.convert("L")
-            #processed_path = os.path.join(MEDIA_DIR, "procesada", "processed_image.png")
-            #os.makedirs(os.path.dirname(processed_path), exist_ok=True)
-            #processed_image.save(processed_path)
+            for person in dataPeople:
+                bbox = person["bbox"]
+                gender_label = person["gender"]
+                age_label = person["age"]
+                draw.rectangle(
+                    [bbox["x_min"], bbox["y_min"], bbox["x_max"], bbox["y_max"]],
+                    outline="red",
+                    width=4  # Hacer los bordes más gruesos
+                )
+                draw.text((bbox["x_min"], bbox["y_min"] - 40), f"{gender_label}, {age_label}", fill="red", font=font)
 
-            # Responder con las rutas de las imágenes
+            # Guardar la imagen procesada
+            processed_path = os.path.join(MEDIA_DIR, "procesada", "processed_image.png")
+            os.makedirs(os.path.dirname(processed_path), exist_ok=True)
+            processed_image.save(processed_path)
+
+            # Convertir la imagen procesada a base64 para enviar al frontend
+            buffered = BytesIO()
+            processed_image.save(buffered, format="PNG")
+            processed_image_base64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
+
+            # Responder con las rutas de las imágenes, bounding boxes, géneros y edades
             return JsonResponse({
                 "message": "Imagen procesada exitosamente",
                 "original_image_url": f"/media/images/original/original_image.png",
-                #"processed_image_url": f"/media/images/procesada/processed_image.png"
+                "processed_image_url": f"/media/images/procesada/processed_image.png",
+                "processed_image_base64": f"data:image/png;base64,{processed_image_base64}",
+                "dataPeople": dataPeople
             }, status=200)
 
         except Exception as e:
             return JsonResponse({"error": f"Error al procesar la imagen: {str(e)}"}, status=500)
 
     return JsonResponse({"error": "Método no permitido"}, status=405)
+
+
+def process_predictions(predictions, orig_w, orig_h):
+    bounding_boxes = []
+    min_area_threshold = 1500  # Umbral de área mínima
+
+    for bbox in predictions:
+        x_min, y_min, x_max, y_max = bbox
+        x_min = int(x_min * orig_w / 224)
+        y_min = int(y_min * orig_h / 224)
+        x_max = int(x_max * orig_w / 224)
+        y_max = int(y_max * orig_h / 224)
+
+        # Calcular el área y filtrar bounding boxes pequeños
+        area = (x_max - x_min) * (y_max - y_min)
+        if x_max > x_min and y_max > y_min and area > min_area_threshold:
+            bounding_boxes.append({
+                "x_min": x_min,
+                "y_min": y_min,
+                "x_max": x_max,
+                "y_max": y_max
+            })
+
+    return bounding_boxes
+
+# def process_predictions(predictions):
+#     bounding_boxes = []
+
+#     # Asegúrate de que las predicciones tienen el formato esperado
+#     for bbox in predictions:
+#         if len(bbox) == 4:  # Si las predicciones tienen las 4 coordenadas esperadas
+#             x_min, y_min, x_max, y_max = bbox
+
+#             # Validar que los valores sean coherentes
+#             if x_max > x_min and y_max > y_min:
+#                 bounding_boxes.append({
+#                     "x_min": int(x_min),
+#                     "y_min": int(y_min),
+#                     "x_max": int(x_max),
+#                     "y_max": int(y_max)
+#                 })
+#         else:
+#             print(f"Formato inesperado de predicción: {bbox}")
+
+#     return bounding_boxes
+
 
 class CrearRecomendacionView(CreateView):
     model = Recomendacion

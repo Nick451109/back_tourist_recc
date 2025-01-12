@@ -7,7 +7,7 @@ urlpatterns = [
     path('recommendations/', admin_view, name='admin_view'),
     path('recommendations/create/', CrearRecomendacionView.as_view(), name='crear_recomendacion'),
     path('recommendations/delete/<int:pk>/', eliminar_recomendacion, name='eliminar_recomendacion'),
-
     path('recommendations/upload-image/', upload_image, name='upload_image'),
+
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

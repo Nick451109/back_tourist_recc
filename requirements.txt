@@ -7,3 +7,6 @@ pillow==11.1.0
 python-decouple==3.8
 sqlparse==0.5.3
 typing_extensions==4.12.2
+tensorflow==2.7.0
+numpy==1.22.0
+opencv-python==4.5.5.64 
