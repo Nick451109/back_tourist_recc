@@ -139,6 +139,59 @@ def upload_image(request):
 
                 age_counts[age_label] += 1
 
+            # Guardar la imagen original
+            original_path = os.path.join(MEDIA_DIR, "original", "original_image.png")
+            os.makedirs(os.path.dirname(original_path), exist_ok=True)
+            image.save(original_path)
+
+            # Dibujar bounding boxes y etiquetas en la imagen
+            processed_image = image.copy()
+            draw = ImageDraw.Draw(processed_image)
+            font_size = 30  # Tamaño de la fuente más grande
+            font_path = os.path.join(settings.BASE_DIR, "fonts/arial.ttf")
+            try:
+                font = ImageFont.truetype(font_path, font_size)  # Cargar la fuente desde el archivo local
+            except IOError:
+                font = ImageFont.load_default()  # Usar fuente predeterminada si ocurre un error
+
+            for person in dataPeople:
+                bbox = person["bbox"]
+                gender_label = person["gender"]
+                age_label = person["age"]
+                draw.rectangle(
+                    [bbox["x_min"], bbox["y_min"], bbox["x_max"], bbox["y_max"]],
+                    outline="green",
+                    width=4  # Hacer los bordes más gruesos
+                )
+                # Definir el tamaño del texto y el fondo
+                text = f"{gender_label}, {age_label}"
+                text_bbox = draw.textbbox((0, 0), text, font=font)
+                text_width = text_bbox[2] - text_bbox[0]
+                text_height = text_bbox[3] - text_bbox[1]
+
+                # Coordenadas del rectángulo de fondo
+                background_coords = [
+                    (bbox["x_min"], bbox["y_min"] - text_height),
+                    (bbox["x_min"] + text_width, bbox["y_min"])
+                ]
+
+
+                # Dibujar el rectángulo de fondo negro
+                draw.rectangle(background_coords, fill="black")
+
+                # Dibujar el texto blanco sobre el fondo negro
+                draw.text((bbox["x_min"], bbox["y_min"] - text_height), text, fill="white", font=font)
+
+            # Guardar la imagen procesada
+            processed_path = os.path.join(MEDIA_DIR, "procesada", "processed_image.png")
+            os.makedirs(os.path.dirname(processed_path), exist_ok=True)
+            processed_image.save(processed_path)
+
+            # Convertir la imagen procesada a base64 para enviar al frontend
+            buffered = BytesIO()
+            processed_image.save(buffered, format="PNG")
+            processed_image_base64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
+
             # Identificar categorías en orden de prioridad
             sorted_ages = sorted(age_counts.items(), key=lambda x: x[1], reverse=True)
             predominant_age = sorted_ages[0][0]
@@ -156,7 +209,10 @@ def upload_image(request):
                 "predominant_age": predominant_age,
                 "dataPeople": dataPeople,
                 "recomendaciones": recomendaciones,  # Recomendaciones ordenadas por prioridad
-                "age_counts": age_counts
+                "age_counts": age_counts,
+                "original_image_url": f"/media/images/original/original_image.png",
+                "processed_image_url": f"/media/images/procesada/processed_image.png",
+                "processed_image_base64": f"data:image/png;base64,{processed_image_base64}",
             }, status=200)
 
         except Exception as e:
