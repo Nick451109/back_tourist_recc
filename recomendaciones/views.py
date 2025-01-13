@@ -135,10 +135,27 @@ def upload_image(request):
                 age_label = person["age"]
                 draw.rectangle(
                     [bbox["x_min"], bbox["y_min"], bbox["x_max"], bbox["y_max"]],
-                    outline="red",
+                    outline="green",
                     width=4  # Hacer los bordes más gruesos
                 )
-                draw.text((bbox["x_min"], bbox["y_min"] - 40), f"{gender_label}, {age_label}", fill="red", font=font)
+                # Definir el tamaño del texto y el fondo
+                text = f"{gender_label}, {age_label}"
+                text_bbox = draw.textbbox((0, 0), text, font=font)
+                text_width = text_bbox[2] - text_bbox[0]
+                text_height = text_bbox[3] - text_bbox[1]
+
+                # Coordenadas del rectángulo de fondo
+                background_coords = [
+                    (bbox["x_min"], bbox["y_min"] - text_height),
+                    (bbox["x_min"] + text_width, bbox["y_min"])
+                ]
+
+
+                # Dibujar el rectángulo de fondo negro
+                draw.rectangle(background_coords, fill="black")
+
+                # Dibujar el texto blanco sobre el fondo negro
+                draw.text((bbox["x_min"], bbox["y_min"] - text_height), text, fill="white", font=font)
 
             # Guardar la imagen procesada
             processed_path = os.path.join(MEDIA_DIR, "procesada", "processed_image.png")

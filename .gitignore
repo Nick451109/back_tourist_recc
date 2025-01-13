@@ -38,5 +38,3 @@ staticfiles/
 *.bak
 *.tmp
 
-models/*.keras
-models/*.h5
