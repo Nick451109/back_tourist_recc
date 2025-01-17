@@ -38,3 +38,4 @@ staticfiles/
 *.bak
 *.tmp
 
+/models
